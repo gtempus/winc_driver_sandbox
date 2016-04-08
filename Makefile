@@ -2,6 +2,8 @@ CC = avr-gcc
 OBJCOPY = avr-objcopy
 OBJDUMP = avr-objdump
 AVRSIZE = avr-size
+AVRDUDE = avrdude
+PROGRAMMER_TYPE = usbtiny
 
 ## The name of your project (without the .c)
 # TARGET = blinkLED
@@ -30,7 +32,12 @@ LDFLAGS += -Wl,--gc-sections
 
 TARGET_ARCH = -mmcu=$(MCU)
 
-OBJECTS = main.o sysclk.o nmspi.o spi.o i2c.o eeprom.o nm_bsp_mega.o nm_common.o nm_bus_wrapper_mega.o m2m_hif.o m2m_periph.o m2m_wifi.o nmasic.o  nmbus.o nmdrv.o nmi2c.o nmuart.o spi_flash.o socket.o
+OBJECTS = main.o sysclk.o nmspi.o spi.o \
+          i2c.o eeprom.o nm_bsp_mega.o \
+          nm_common.o nm_bus_wrapper_mega.o \
+          m2m_hif.o m2m_periph.o m2m_wifi.o \
+          nmasic.o nmbus.o nmdrv.o nmi2c.o \
+          nmuart.o spi_flash.o socket.o
 
 winc_drvr : $(OBJECTS)
 
@@ -147,10 +154,19 @@ $(TARGET).elf: $(OBJECTS)
 	$(OBJDUMP) -S $< > $@
 
 ## These targets don't have files named after them
-.PHONY: all size
+.PHONY: all size clean
 
 all: $(TARGET).hex 
 
 # Optionally show how big the resulting program is 
 size:  $(TARGET).elf
 	$(AVRSIZE) -C --mcu=$(MCU) $(TARGET).elf
+
+clean:
+	rm -f winc_drvr $(OBJECTS)
+
+depend:
+	$(CC) $(CFLAGS) $(CPPFLAGS) -MM WINC_mega.c
+
+flash: $(TARGET).hex 
+	$(AVRDUDE) -c $(PROGRAMMER_TYPE) -p m168 $(PROGRAMMER_ARGS) -U flash:w:$<
